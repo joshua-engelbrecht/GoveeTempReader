@@ -12,9 +12,9 @@ namespace BLEGoveeTest.Components.Pages
         private BluetoothState bleState = BluetoothState.Unknown;
 
         private List<IDevice> Devices = new List<IDevice>();
+        private List<IService> Services = new List<IService>();
         private IDevice? ConnectedDevice { get; set; } = default!;
-        private CancellationTokenSource ConnectCancellationSource { get; set; } = default!;
-        private CancellationTokenSource ScanCancellationSource { get; set; } = default!;
+        private CancellationTokenSource CancellationSource { get; set; } = default!;
         private bool IsScanning => BLEDiscoveryService.IsScanning;
         private bool IsConnecting => BLEDiscoveryService.IsConnecting;
         protected override void OnInitialized()
@@ -24,7 +24,7 @@ namespace BLEGoveeTest.Components.Pages
 
         private async Task StartScanning()
         {
-            ScanCancellationSource = new CancellationTokenSource();
+            CancellationSource = new CancellationTokenSource();
             Devices.Clear();
             await InvokeAsync(StateHasChanged);
             await BLEDiscoveryService.StartScanningAsync(device =>
@@ -35,19 +35,19 @@ namespace BLEGoveeTest.Components.Pages
                     {
                         Devices.Add(device);
                         InvokeAsync(StateHasChanged);
-                        ScanCancellationSource.Cancel();
+                        CancellationSource.Cancel();
                     }
                     Debug.WriteLine($"Device found: {device.Name}");
                 }
-            }, ScanCancellationSource.Token);
+            }, CancellationSource.Token);
         }
 
         private async Task ConnectToDevice(Guid id)
         {
             try
             {
-                ConnectCancellationSource = new CancellationTokenSource();
-                ConnectedDevice = await BLEDiscoveryService.ConnectToDeviceAsync(id, ConnectCancellationSource.Token);
+                CancellationSource = new CancellationTokenSource();
+                ConnectedDevice = await BLEDiscoveryService.ConnectToDeviceAsync(id, CancellationSource.Token);
             }
             catch (Exception ex)
             {
@@ -59,12 +59,16 @@ namespace BLEGoveeTest.Components.Pages
         {
             if (ConnectedDevice is not null)
             {
+                Services.Clear();
+                CancellationSource = new();
                 try
                 {
-                    var services = await BLEDiscoveryService.GetServicesForDeviceAsync(ConnectedDevice);
+                    var services = await BLEDiscoveryService.GetServicesForDeviceAsync(ConnectedDevice, CancellationSource.Token);
                     foreach (IService service in services)
                     {
-                        Debug.WriteLine($"Service: {service.Name}");
+                        Services.Add(service);
+
+                        Debug.WriteLine($"Service: {service.Name}, ID: {service.Id}");
                     }
                 }
                 catch (Exception ex)
@@ -74,14 +78,29 @@ namespace BLEGoveeTest.Components.Pages
             }
         }
 
-        private void StopConnectingToDevice()
+        private async Task GetCharacteristicAsync(IService service)
         {
-            ConnectCancellationSource.Cancel();
+            try
+            {
+                if (ConnectedDevice is not null)
+                {
+                    var connectedService = await ConnectedDevice.GetServiceAsync(service.Id);
+                    var characteristics = await BLEDiscoveryService.GetCharacteristicsAsync(connectedService);
+                    foreach (ICharacteristic characteristic in characteristics)
+                    {
+                        Debug.WriteLine($"Characteristic: {characteristic.Name}, ID: {characteristic.Id}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+            }
         }
 
-        private void StopScanningForDevice()
+        private void TriggerCancellation()
         {
-            ScanCancellationSource.Cancel();
+            CancellationSource.Cancel();
         }
 
         private async Task DisconnectFromDevice()
@@ -90,7 +109,7 @@ namespace BLEGoveeTest.Components.Pages
             {
                 try
                 {
-                    await BLEDiscoveryService.DiscconnectFromDeviceAsync(ConnectedDevice);
+                    await BLEDiscoveryService.DisconnectFromDeviceAsync(ConnectedDevice);
                     ConnectedDevice = null;
                 }
                 catch (Exception ex)

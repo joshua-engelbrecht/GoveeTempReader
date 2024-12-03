@@ -16,8 +16,8 @@ namespace BLEGoveeTest.Services
 
         Task StartScanningAsync(Action<IDevice> onDeviceFound, CancellationToken cancellationToken);
         Task<IDevice?> ConnectToDeviceAsync(Guid id, CancellationToken cancellationToken);
-        Task DiscconnectFromDeviceAsync(IDevice connectedDevice);
-        Task<IReadOnlyList<IService>> GetServicesForDeviceAsync(IDevice connectedDevice);
+        Task DisconnectFromDeviceAsync(IDevice connectedDevice);
+        Task<IReadOnlyList<IService>> GetServicesForDeviceAsync(IDevice connectedDevice, CancellationToken cancellationToken);
         Task<IReadOnlyList<ICharacteristic>> GetCharacteristicsAsync(IService connectedDeviceService);
     }
 }

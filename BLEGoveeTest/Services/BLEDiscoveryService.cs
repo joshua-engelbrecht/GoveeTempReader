@@ -66,7 +66,7 @@ namespace BLEGoveeTest.Services
             return device;
         }
 
-        public async Task DiscconnectFromDeviceAsync(IDevice connectedDevice)
+        public async Task DisconnectFromDeviceAsync(IDevice connectedDevice)
         {
             try
             {
@@ -78,9 +78,9 @@ namespace BLEGoveeTest.Services
             }
         }
 
-        public async Task<IReadOnlyList<IService>> GetServicesForDeviceAsync(IDevice connectedDevice)
+        public async Task<IReadOnlyList<IService>> GetServicesForDeviceAsync(IDevice connectedDevice, CancellationToken cancellationToken)
         {
-            return await connectedDevice.GetServicesAsync();
+            return await connectedDevice.GetServicesAsync(cancellationToken);
         }
 
         public async Task<IReadOnlyList<ICharacteristic>> GetCharacteristicsAsync(IService connectedDeviceService)

@@ -23,14 +23,21 @@ Welcome to your new app.
     else
     {
         <div class="spinner"></div>
-        <button @onclick="@StopScanningForDevice">Stop Scanning</button>
+        <button @onclick="@TriggerCancellation">Stop Scanning</button>
     }
 }
 else
 {
     <div>
         <h2>Connected to @ConnectedDevice.Name</h2>
+        <h3>
+            @foreach (var service in Services)
+            {
+                <h4 @onclick="@(() =>GetCharacteristicAsync(service))">@service.Name</h4>
+            }
+        </h3>
         @if (!IsConnecting)
+
         {
             <button @onclick="@DisconnectFromDevice">Disconnect</button>
             <button @onclick="@GetServices">Get Services</button>
@@ -38,7 +45,7 @@ else
         else
         {
             <div class="spinner"></div>
-            <button @onclick="@StopConnectingToDevice">Stop Connecting</button>
+            <button @onclick="@TriggerCancellation">Stop Connecting</button>
         }
     </div>
 }
